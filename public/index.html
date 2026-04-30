@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Discussion Agent</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #FAF8F3;
+    --ink: #1A1814;
+    --ink-muted: #6B6760;
+    --ink-faint: #C4C0B8;
+    --accent: #2D5016;
+    --accent-light: #E8F0DE;
+    --accent-mid: #4A7A28;
+    --gold: #B8860B;
+    --gold-light: #FDF8E8;
+    --surface: #FFFFFF;
+    --border: #E2DDD6;
+    --danger: #8B2020;
+    --danger-light: #FDF0F0;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    background: var(--ink);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  header .course-tag { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); }
+  header .course-name { font-family: 'Lora', serif; font-size: 16px; color: #FAF8F3; margin-top: 2px; }
+  header .week-badge { background: var(--accent); color: #E8F4D8; font-size: 12px; font-weight: 500; padding: 5px 14px; border-radius: 20px; }
+  header .student-name { font-size: 12px; color: var(--ink-faint); margin-top: 3px; }
+
+  .question-card {
+    margin: 20px 24px 0;
+    background: var(--gold-light);
+    border: 1px solid #DDD0A0;
+    border-radius: var(--radius);
+    padding: 18px 22px;
+  }
+  .q-label { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold); margin-bottom: 7px; }
+  .q-text { font-family: 'Lora', serif; font-size: 16px; line-height: 1.6; color: var(--ink); }
+  .q-instructions { font-size: 13px; color: var(--ink-muted); margin-top: 9px; line-height: 1.5; }
+
+  .main {
+    flex: 1; display: flex; flex-direction: column;
+    padding: 18px 24px 24px; gap: 14px;
+    max-width: 860px; width: 100%; margin: 0 auto; align-self: stretch;
+  }
+
+  .chat-container {
+    flex: 1; background: var(--surface);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    display: flex; flex-direction: column; overflow: hidden; min-height: 340px;
+  }
+  .chat-header {
+    padding: 11px 16px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .facilitator-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent-mid); }
+  .chat-header span { font-size: 13px; color: var(--ink-muted); }
+
+  .chat-messages {
+    flex: 1; overflow-y: auto; padding: 18px 16px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .msg { display: flex; gap: 9px; max-width: 86%; }
+  .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+  .msg.assistant { align-self: flex-start; }
+  .msg-avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 500; flex-shrink: 0;
+  }
+  .msg.assistant .msg-avatar { background: var(--accent-light); color: var(--accent); }
+  .msg.user .msg-avatar { background: var(--ink); color: var(--cream); }
+  .msg-bubble {
+    padding: 9px 13px; border-radius: 13px;
+    font-size: 14px; line-height: 1.6;
+  }
+  .msg.assistant .msg-bubble { background: #F4F3EF; color: var(--ink); border-bottom-left-radius: 4px; }
+  .msg.user .msg-bubble { background: var(--ink); color: var(--cream); border-bottom-right-radius: 4px; }
+
+  .typing-indicator { display: flex; gap: 4px; align-items: center; padding: 9px 13px; background: #F4F3EF; border-radius: 13px; border-bottom-left-radius: 4px; }
+  .typing-indicator span { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-muted); animation: bounce 1.2s infinite; }
+  .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-5px)} }
+
+  .input-area {
+    border-top: 1px solid var(--border); padding: 12px 14px;
+    display: flex; gap: 9px; background: var(--surface);
+  }
+  .input-area textarea {
+    flex: 1; border: 1px solid var(--border); border-radius: 8px;
+    padding: 9px 12px; font-family: 'DM Sans', sans-serif; font-size: 14px;
+    color: var(--ink); resize: none; outline: none; line-height: 1.5;
+    min-height: 42px; max-height: 110px; background: var(--cream); transition: border-color 0.15s;
+  }
+  .input-area textarea:focus { border-color: var(--accent-mid); }
+  .send-btn {
+    background: var(--accent); color: white; border: none; border-radius: 8px;
+    padding: 0 16px; font-size: 14px; font-weight: 500; cursor: pointer;
+    transition: background 0.15s; align-self: flex-end; height: 42px;
+  }
+  .send-btn:hover { background: var(--accent-mid); }
+  .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .bottom-bar {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px 16px;
+    display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  }
+  .msg-count { font-size: 13px; color: var(--ink-muted); }
+  .msg-count strong { color: var(--ink); }
+  .bottom-actions { display: flex; gap: 9px; align-items: center; }
+
+  .btn-secondary {
+    padding: 7px 14px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+    border: 1px solid var(--border); border-radius: 7px;
+    background: transparent; color: var(--ink-muted); cursor: pointer; transition: all 0.15s;
+  }
+  .btn-secondary:hover { background: var(--cream); color: var(--ink); }
+
+  .btn-submit {
+    padding: 7px 18px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+    border: none; border-radius: 7px; background: var(--accent); color: white;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .btn-submit:hover { background: var(--accent-mid); }
+  .btn-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Modal */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(26,24,20,0.5); z-index: 100;
+    align-items: center; justify-content: center; padding: 24px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface); border-radius: 14px; padding: 26px;
+    max-width: 520px; width: 100%; max-height: 80vh; overflow-y: auto;
+  }
+  .modal h2 { font-family: 'Lora', serif; font-size: 19px; margin-bottom: 5px; }
+  .modal .modal-sub { font-size: 13px; color: var(--ink-muted); margin-bottom: 18px; }
+  .transcript-box {
+    background: var(--cream); border: 1px solid var(--border); border-radius: 8px;
+    padding: 13px; font-size: 12.5px; line-height: 1.7;
+    max-height: 220px; overflow-y: auto; margin-bottom: 18px;
+    white-space: pre-wrap; color: var(--ink); font-family: monospace;
+  }
+  .status-msg { font-size: 13px; padding: 8px 12px; border-radius: 7px; margin-bottom: 13px; display: none; }
+  .status-msg.success { background: var(--accent-light); color: var(--accent); display: block; }
+  .status-msg.error { background: var(--danger-light); color: var(--danger); display: block; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 18px; }
+
+  .info-note {
+    background: #EEF4FF; border: 1px solid #C0D0F0; border-radius: 8px;
+    padding: 10px 14px; font-size: 12.5px; color: #2A3E7A; line-height: 1.5; margin-bottom: 14px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="course-tag">Graduate Seminar</div>
+    <div class="course-name" id="courseNameDisplay">Loading…</div>
+    <div class="student-name" id="studentNameDisplay"></div>
+  </div>
+  <div class="week-badge" id="weekBadgeDisplay">Discussion</div>
+</header>
+
+<div style="max-width:860px;width:100%;margin:0 auto;padding:0 24px;">
+  <div class="question-card">
+    <div class="q-label">This week's discussion question</div>
+    <div class="q-text" id="questionDisplay">Loading question…</div>
+    <div class="q-instructions">Engage in a dialogue with the AI facilitator. Aim for at least 4–6 exchanges before submitting. There are no right answers — think out loud and let your reasoning develop.</div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="chat-container">
+    <div class="chat-header">
+      <div class="facilitator-dot"></div>
+      <span>AI Discussion Facilitator</span>
+    </div>
+    <div class="chat-messages" id="chatMessages">
+      <div class="msg assistant">
+        <div class="msg-avatar">AF</div>
+        <div class="msg-bubble">Welcome. Take a moment to gather your thoughts, then share your initial response to this week's question.</div>
+      </div>
+    </div>
+    <div class="input-area">
+      <textarea id="userInput" placeholder="Type your response…" rows="1"
+        onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <div class="bottom-bar">
+    <div class="msg-count">
+      <strong id="exchangeCount">0</strong> exchanges · minimum 4 recommended
+    </div>
+    <div class="bottom-actions">
+      <button class="btn-secondary" onclick="clearChat()">Clear</button>
+      <button class="btn-submit" onclick="openSubmitModal()">Submit to Canvas →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Submit modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h2>Submit to Canvas</h2>
+    <p class="modal-sub">Review your transcript and confirm submission.</p>
+    <div class="status-msg" id="statusMsg"></div>
+    <div class="info-note" id="ltiNote" style="display:none;">
+      Submitting as <strong id="ltiUserDisplay"></strong> to assignment in <strong id="ltiCourseDisplay"></strong>.
+      Your Canvas credentials are managed by your institution — no token needed.
+    </div>
+    <div class="transcript-box" id="transcriptBox"></div>
+    <div id="manualFields" style="display:none;">
+      <p style="font-size:13px;color:var(--ink-muted);margin-bottom:12px;">
+        Not launched via Canvas? Enter your details manually:
+      </p>
+      <div style="display:flex;flex-direction:column;gap:9px;">
+        <div><label style="font-size:12px;font-weight:500;color:var(--ink-muted);display:block;margin-bottom:3px;">Canvas base URL</label>
+          <input type="text" id="canvasUrl" placeholder="https://school.instructure.com" style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 11px;font-size:13px;font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);outline:none;"></div>
+        <div><label style="font-size:12px;font-weight:500;color:var(--ink-muted);display:block;margin-bottom:3px;">Canvas API token</label>
+          <input type="password" id="canvasToken" placeholder="Your personal access token" style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 11px;font-size:13px;font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);outline:none;"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+          <div><label style="font-size:12px;font-weight:500;color:var(--ink-muted);display:block;margin-bottom:3px;">Course ID</label>
+            <input type="text" id="courseId" placeholder="12345" style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 11px;font-size:13px;font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);outline:none;"></div>
+          <div><label style="font-size:12px;font-weight:500;color:var(--ink-muted);display:block;margin-bottom:3px;">Assignment ID</label>
+            <input type="text" id="assignmentId" placeholder="67890" style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 11px;font-size:13px;font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);outline:none;"></div>
+          <div><label style="font-size:12px;font-weight:500;color:var(--ink-muted);display:block;margin-bottom:3px;">Your user ID</label>
+            <input type="text" id="studentId" placeholder="54321" style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 11px;font-size:13px;font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);outline:none;"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn-submit" onclick="submitToCanvas()">Confirm submission</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── State ──
+let conversationHistory = [];
+let exchangeCount = 0;
+let launchData = null;
+
+// ── System prompts by role ──
+const ROLES = {
+  socratic: "You are a Socratic discussion facilitator for a graduate seminar. Deepen the student's thinking through probing questions. Challenge unsupported claims, push for specificity, and ask them to connect theory to practice. Do NOT simply validate. Keep responses concise (2–4 sentences). Guide through questioning, not lecturing.",
+  coach: "You are a supportive academic coach facilitating a graduate discussion. Encourage the student, help them expand their ideas, and affirm good thinking while gently pushing them to go deeper. Keep responses warm and concise (2–4 sentences).",
+  devil_advocate: "You are a devil's advocate facilitator for a graduate seminar. Respectfully but directly challenge everything the student says. Offer the strongest counterarguments you can. Push them to defend and refine their positions. Keep responses sharp and focused (2–4 sentences).",
+  neutral: "You are a neutral discussion facilitator for a graduate seminar. Reflect back what the student says, identify key themes and tensions in their response, and ask clarifying questions. Do not advocate any position. Keep responses concise (2–4 sentences)."
+};
+
+// ── Init: parse LTI launch data from URL param ──
+(function init() {
+  const params = new URLSearchParams(window.location.search);
+  const encoded = params.get('launch');
+
+  if (encoded) {
+    try {
+      launchData = JSON.parse(atob(encoded));
+      document.getElementById('courseNameDisplay').textContent = launchData.courseName || 'Graduate Seminar';
+      document.getElementById('weekBadgeDisplay').textContent = launchData.weekLabel || 'Discussion';
+      document.getElementById('questionDisplay').textContent = launchData.question || 'What are the key tensions in this week\'s readings?';
+      if (launchData.userName) {
+        document.getElementById('studentNameDisplay').textContent = launchData.userName;
+      }
+      // LTI mode: show contextual submit info, hide manual fields
+      document.getElementById('ltiNote').style.display = 'block';
+      document.getElementById('ltiUserDisplay').textContent = launchData.userName || 'you';
+      document.getElementById('ltiCourseDisplay').textContent = launchData.courseName || 'your course';
+    } catch(e) {
+      console.warn('Could not parse LTI launch data');
+      showManualMode();
+    }
+  } else {
+    // Standalone mode (no LTI launch)
+    document.getElementById('courseNameDisplay').textContent = 'Discussion Agent';
+    document.getElementById('weekBadgeDisplay').textContent = 'Discussion';
+    document.getElementById('questionDisplay').textContent = 'What are the key tensions in this week\'s readings, and how do they connect to your own professional experience?';
+    showManualMode();
+  }
+})();
+
+function showManualMode() {
+  document.getElementById('manualFields').style.display = 'block';
+}
+
+// ── Chat ──
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 110) + 'px';
+}
+function addMessage(role, text) {
+  const container = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  const avatar = document.createElement('div');
+  avatar.className = 'msg-avatar';
+  avatar.textContent = role === 'assistant' ? 'AF' : 'You';
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+  bubble.textContent = text;
+  div.appendChild(avatar);
+  div.appendChild(bubble);
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+function showTyping() {
+  const container = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'msg assistant'; div.id = 'typingIndicator';
+  const avatar = document.createElement('div');
+  avatar.className = 'msg-avatar'; avatar.textContent = 'AF';
+  const ind = document.createElement('div');
+  ind.className = 'typing-indicator';
+  ind.innerHTML = '<span></span><span></span><span></span>';
+  div.appendChild(avatar); div.appendChild(ind);
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+function removeTyping() {
+  const el = document.getElementById('typingIndicator');
+  if (el) el.remove();
+}
+
+async function sendMessage() {
+  const input = document.getElementById('userInput');
+  const text = input.value.trim();
+  if (!text) return;
+
+  addMessage('user', text);
+  conversationHistory.push({ role: 'user', content: text });
+  input.value = ''; input.style.height = 'auto';
+  exchangeCount++;
+  document.getElementById('exchangeCount').textContent = exchangeCount;
+
+  const sendBtn = document.getElementById('sendBtn');
+  sendBtn.disabled = true;
+  showTyping();
+
+  const question = launchData?.question || document.getElementById('questionDisplay').textContent;
+  const role = launchData?.facilitatorRole || 'socratic';
+  const systemPrompt = (ROLES[role] || ROLES.socratic) + '\n\nThe discussion question for this session: "' + question + '"';
+
+  try {
+    // Call our server-side proxy (keeps API key secure)
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: conversationHistory, systemPrompt })
+    });
+    const data = await response.json();
+    removeTyping();
+
+    if (data.error) {
+      addMessage('assistant', 'Error: ' + data.error);
+    } else {
+      conversationHistory.push({ role: 'assistant', content: data.reply });
+      addMessage('assistant', data.reply);
+    }
+  } catch (err) {
+    removeTyping();
+    addMessage('assistant', 'Network error: ' + err.message);
+  }
+  sendBtn.disabled = false;
+}
+
+function clearChat() {
+  if (!confirm('Clear the conversation and start over?')) return;
+  conversationHistory = []; exchangeCount = 0;
+  document.getElementById('exchangeCount').textContent = '0';
+  document.getElementById('chatMessages').innerHTML = '';
+  addMessage('assistant', "Welcome. Take a moment to gather your thoughts, then share your initial response to this week's question.");
+}
+
+// ── Submit ──
+function buildTranscript() {
+  const question = launchData?.question || document.getElementById('questionDisplay').textContent;
+  const course = launchData?.courseName || document.getElementById('courseNameDisplay').textContent;
+  const week = launchData?.weekLabel || document.getElementById('weekBadgeDisplay').textContent;
+  const student = launchData?.userName || 'Student';
+  const lines = ['=== Discussion Transcript ===',
+    'Course: ' + course, 'Week: ' + week,
+    'Student: ' + student,
+    'Question: ' + question,
+    'Date: ' + new Date().toLocaleDateString(), '', '--- Conversation ---', ''];
+  conversationHistory.forEach(msg => {
+    lines.push('[' + (msg.role === 'user' ? 'Student' : 'Facilitator') + ']');
+    lines.push(msg.content); lines.push('');
+  });
+  return lines.join('\n');
+}
+
+function openSubmitModal() {
+  if (conversationHistory.length < 2) {
+    alert('Please have at least one exchange before submitting.');
+    return;
+  }
+  document.getElementById('transcriptBox').textContent = buildTranscript();
+  document.getElementById('statusMsg').className = 'status-msg';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+
+async function submitToCanvas() {
+  const statusMsg = document.getElementById('statusMsg');
+  const transcript = buildTranscript();
+
+  // Determine submission params (LTI vs manual)
+  let payload;
+  if (launchData?.courseId && launchData?.assignmentId && launchData?.userId) {
+    payload = {
+      courseId: launchData.courseId,
+      assignmentId: launchData.assignmentId,
+      userId: launchData.userId,
+      transcript,
+      // Server uses its own Canvas token or the one from env
+      useLtiContext: true
+    };
+  } else {
+    const canvasUrl = document.getElementById('canvasUrl').value.trim();
+    const canvasToken = document.getElementById('canvasToken').value.trim();
+    const courseId = document.getElementById('courseId').value.trim();
+    const assignmentId = document.getElementById('assignmentId').value.trim();
+    const userId = document.getElementById('studentId').value.trim();
+    if (!canvasUrl || !canvasToken || !courseId || !assignmentId || !userId) {
+      statusMsg.textContent = 'Please fill in all Canvas fields.';
+      statusMsg.className = 'status-msg error'; return;
+    }
+    payload = { canvasBaseUrl: canvasUrl, canvasToken, courseId, assignmentId, userId, transcript };
+  }
+
+  statusMsg.textContent = 'Submitting…'; statusMsg.className = 'status-msg success';
+
+  try {
+    const response = await fetch('/api/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await response.json();
+    if (data.success) {
+      statusMsg.textContent = '✓ Submitted successfully! You can close this window.';
+    } else {
+      statusMsg.textContent = 'Error: ' + (data.error || 'Unknown error');
+      statusMsg.className = 'status-msg error';
+    }
+  } catch (err) {
+    statusMsg.textContent = 'Network error: ' + err.message;
+    statusMsg.className = 'status-msg error';
+  }
+}
+
+document.getElementById('modalOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Canvas LTI 1.1 Configuration XML
+  ═══════════════════════════════════════════════════════════════
+  HOW TO USE:
+  1. Host this file at a public URL (e.g. https://yourapp.com/lti/config.xml)
+     OR paste the XML directly into Canvas during tool registration.
+  2. In Canvas: Admin → Settings → Apps → +App
+     Configuration type: "Paste XML" or "By URL"
+  3. Replace YOUR_APP_URL with your deployed server URL throughout.
+  4. Customize custom_params for each assignment (or set defaults here).
+  ═══════════════════════════════════════════════════════════════
+-->
+<cartridge_basiclti_link
+  xmlns="http://www.imsglobal.org/xsd/imslticc_v1p0"
+  xmlns:blti="http://www.imsglobal.org/xsd/imsbasiclti_v1p0"
+  xmlns:lticm="http://www.imsglobal.org/xsd/imslticm_v1p0"
+  xmlns:lticp="http://www.imsglobal.org/xsd/imslticp_v1p0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.imsglobal.org/xsd/imslticc_v1p0
+    http://www.imsglobal.org/xsd/lti/ltiv1p0/imslticc_v1p0.xsd">
+
+  <!-- ── Tool identity ── -->
+  <blti:title>Graduate Discussion Agent</blti:title>
+  <blti:description>
+    AI-facilitated weekly discussion tool for graduate seminars.
+    Students engage in a Socratic dialogue and submit transcripts directly to Canvas.
+  </blti:description>
+  <blti:icon>https://YOUR_APP_URL/icon.png</blti:icon>
+
+  <!-- ── Launch URL — your deployed server ── -->
+  <blti:launch_url>https://YOUR_APP_URL/lti/launch</blti:launch_url>
+
+  <!-- ── Canvas-specific extensions ── -->
+  <blti:extensions platform="canvas.instructure.com">
+    <lticm:property name="tool_id">graduate_discussion_agent</lticm:property>
+    <lticm:property name="privacy_level">public</lticm:property>
+    <!-- Embed in an iframe inside Canvas (recommended) -->
+    <lticm:property name="display_type">in_nav_context</lticm:property>
+
+    <!-- Makes tool available as an Assignment type -->
+    <lticm:options name="assignment_selection">
+      <lticm:property name="url">https://YOUR_APP_URL/lti/launch</lticm:property>
+      <lticm:property name="text">Discussion Agent</lticm:property>
+    </lticm:options>
+
+    <!-- Also available in course navigation sidebar -->
+    <lticm:options name="course_navigation">
+      <lticm:property name="url">https://YOUR_APP_URL/lti/launch</lticm:property>
+      <lticm:property name="text">Discussion Agent</lticm:property>
+      <lticm:property name="visibility">public</lticm:property>
+      <lticm:property name="default">enabled</lticm:property>
+    </lticm:options>
+  </blti:extensions>
+
+  <!-- ── Custom parameters sent with every launch ── -->
+  <!-- These become req.body.custom_* in your server -->
+  <!-- Override per-assignment in Canvas assignment settings -->
+  <blti:custom>
+    <!-- Week label shown in the UI header -->
+    <lticm:property name="week_label">Week $Canvas.assignment.title</lticm:property>
+
+    <!-- The discussion question for this assignment -->
+    <!-- Override this per assignment in Canvas! -->
+    <lticm:property name="discussion_question">
+      What are the key tensions in this week's readings, and how do they connect to your own professional experience?
+    </lticm:property>
+
+    <!-- Facilitator persona: socratic | coach | devil_advocate | neutral -->
+    <lticm:property name="facilitator_role">socratic</lticm:property>
+
+    <!-- Canvas substitution variables — auto-filled by Canvas -->
+    <lticm:property name="canvas_course_id">$Canvas.course.id</lticm:property>
+    <lticm:property name="canvas_assignment_id">$Canvas.assignment.id</lticm:property>
+    <lticm:property name="canvas_user_id">$Canvas.user.id</lticm:property>
+  </blti:custom>
+
+</cartridge_basiclti_link>
