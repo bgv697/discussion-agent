@@ -26,7 +26,8 @@ app.post('/lti/launch', (req, res) => {
     process.env.LTI_KEY,       // Must match what you enter in Canvas
     process.env.LTI_SECRET     // Must match what you enter in Canvas
   );
-
+console.log('LTI Body:', JSON.stringify(req.body, null, 2));
+console.log('LTI URL:', req.protocol + '://' + req.get('host') + req.originalUrl);
   provider.valid_request(req, req.body, (err, isValid) => {
     if (!isValid) {
       console.error('LTI validation failed:', err);
