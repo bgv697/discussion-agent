@@ -13,6 +13,7 @@ const fetch = require('node-fetch');
 const path = require('path');
 
 const app = express();
+app.set('trust proxy', 1);
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -27,8 +28,9 @@ app.post('/lti/launch', (req, res) => {
     process.env.LTI_SECRET     // Must match what you enter in Canvas
   );
 console.log('LTI Body:', JSON.stringify(req.body, null, 2));
-console.log('LTI URL:', req.protocol + '://' + req.get('host') + req.originalUrl);
-  provider.valid_request(req, req.body, (err, isValid) => {
+console.log('LTI URL:', 'https://' + req.get('host') + req.originalUrl);
+ req.url = 'https://' + req.get('host') + req.originalUrl;
+provider.valid_request(req, req.body, (err, isValid) => {
     if (!isValid) {
       console.error('LTI validation failed:', err);
       return res.status(401).send('LTI launch validation failed. Check your key/secret.');
