@@ -103,7 +103,7 @@ app.post('/api/chat', async (req, res) => {
 // ─────────────────────────────────────────────
 app.post('/api/submit', async (req, res) => {
   const { canvasBaseUrl, canvasToken, courseId, assignmentId, userId, transcript } = req.body;
-
+console.log('Submit fields:', { canvasBaseUrl, canvasToken, courseId, assignmentId, userId, transcriptLength: transcript?.length });
   if (!canvasBaseUrl || !canvasToken || !courseId || !assignmentId || !userId || !transcript) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
