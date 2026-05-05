@@ -27,7 +27,7 @@ app.post('/lti/launch', (req, res) => {
     process.env.LTI_SECRET     // Must match what you enter in Canvas
   );
 
-  provider.valid_request(req, (err, isValid) => {
+  provider.valid_request(req, req.body, (err, isValid) => {
     if (!isValid) {
       console.error('LTI validation failed:', err);
       return res.status(401).send('LTI launch validation failed. Check your key/secret.');
